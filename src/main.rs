@@ -14,7 +14,7 @@ async fn main() -> std::io::Result<()> {
 
     let config = Config::read_from(DEFAULT_CONFIG_NAME.to_string())?;
 
-    // FIXME messages
+    // FIXME https://actix.rs/docs/errors/
     let bind_config = config.bind
         .ok_or(Error::new(ErrorKind::Other, "No 'bind' record in config file"))?;
     let postgres_config = config.postgres
