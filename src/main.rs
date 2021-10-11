@@ -1,8 +1,11 @@
 use std::io::{Error, ErrorKind};
-use actix_web::{App, HttpServer};
+
+use actix_web::{App, HttpServer, web};
 use actix_web::middleware::Logger;
+
 use iot_data_server::{root, sensor_get, sensor_post};
 use iot_data_server::config::{Config, DEFAULT_CONFIG_NAME};
+use iot_data_server::postgres::Postgres;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -11,18 +14,24 @@ async fn main() -> std::io::Result<()> {
 
     let config = Config::read_from(DEFAULT_CONFIG_NAME.to_string())?;
 
-    let server = HttpServer::new(|| {
+    // FIXME messages
+    let bind_config = config.bind
+        .ok_or(Error::new(ErrorKind::Other, "No 'bind' record in config file"))?;
+    let postgres_config = config.postgres
+        .ok_or(Error::new(ErrorKind::Other, "No 'postgres' record in config file"))?;
+
+    let pool = Postgres::new_pool(postgres_config);
+
+    let server = HttpServer::new(move || {
         App::new()
+            .app_data(web::Data::new(pool.clone()))
             .service(root)
             .service(sensor_get)
             .service(sensor_post)
             .wrap(Logger::default())
     });
 
-    let bind = config.bind
-        .ok_or(Error::new(ErrorKind::Other, "No 'bind' record in config file"))?;
-
-    let server = bind.iter()
+    let server = bind_config.iter()
         .fold(Ok(server), |server, bind_item| {
             server?.bind(bind_item)
         });

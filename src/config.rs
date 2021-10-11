@@ -10,6 +10,23 @@ pub struct Config {
     #[serde(rename(deserialize = "bind"))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub bind: Option<Vec<SocketAddr>>,
+    #[serde(rename(deserialize = "postgres"))]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub postgres: Option<PostgresConfig>,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct PostgresConfig {
+    #[serde(rename(deserialize = "host"))]
+    pub host: String,
+    #[serde(rename(deserialize = "port"))]
+    pub port: u16,
+    #[serde(rename(deserialize = "dbname"))]
+    pub dbname: String,
+    #[serde(rename(deserialize = "user"))]
+    pub user: String,
+    #[serde(rename(deserialize = "password"))]
+    pub password: String,
 }
 
 impl Config {
@@ -22,20 +39,29 @@ impl Config {
 
 #[cfg(test)]
 mod tests {
+    use SocketAddr::{V4, V6};
     use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
-    use crate::config::{Config, DEFAULT_CONFIG_NAME};
+
+    use crate::config::{Config, PostgresConfig};
 
     fn provide_config() -> Config {
         Config {
             bind: Some(vec![
-                SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 8080)),
-                SocketAddr::V6(SocketAddrV6::new(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1), 8080, 0, 0)),
+                V4(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 8080)),
+                V6(SocketAddrV6::new(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1), 8080, 0, 0)),
             ]),
+            postgres: Some(PostgresConfig {
+                host: "192.168.1.100".to_string(),
+                port: 5432,
+                dbname: "main".to_string(),
+                user: "iot-data".to_string(),
+                password: "123 (not really)".to_string(),
+            }),
         }
     }
 
     fn provide_json() -> String {
-        r#"{"bind":["127.0.0.1:8080","[::1]:8080"]}"#.to_string()
+        r#"{"bind":["127.0.0.1:8080","[::1]:8080"],"postgres":{"host":"192.168.1.100","port":5432,"dbname":"main","user":"iot-data","password":"123 (not really)"}}"#.to_string()
     }
 
     #[test]
@@ -55,7 +81,7 @@ mod tests {
     #[test]
     fn read_config_test() {
         let config = provide_config();
-        let json = Config::read_from(DEFAULT_CONFIG_NAME.to_string()).unwrap();
+        let json = Config::read_from("config-example.json".to_string()).unwrap();
         assert_eq!(config, json);
     }
 
