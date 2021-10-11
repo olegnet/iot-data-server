@@ -20,7 +20,8 @@ async fn main() -> std::io::Result<()> {
     let postgres_config = config.postgres
         .ok_or(Error::new(ErrorKind::Other, "No 'postgres' record in config file"))?;
 
-    let pool = Postgres::new_pool(postgres_config);
+    let pool = Postgres::new_pool(postgres_config)
+        .unwrap();
 
     let server = HttpServer::new(move || {
         App::new()

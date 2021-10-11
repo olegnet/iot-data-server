@@ -1,7 +1,9 @@
-use actix_web::{get, HttpResponse, post, Responder, Result, web};
-use deadpool_postgres::Pool;
+use actix_web::{get, HttpResponse, post, Responder, web};
+use actix_web::http::StatusCode;
+use deadpool_postgres::{Pool};
 
-use postgres::get_latest_temperature;
+use crate::postgres::get_latest_temperature;
+use crate::postgres::insert_temperature;
 
 pub mod config;
 pub mod postgres;
@@ -12,13 +14,27 @@ pub async fn root() -> impl Responder {
 }
 
 #[get("/sensor/{sensor_id}")]
-pub async fn sensor_get(sensor_id: web::Path<i32>, db_pool: web::Data<Pool>) -> Result<String> {
+pub async fn sensor_get(sensor_id: web::Path<i32>, db_pool: web::Data<Pool>) -> impl Responder {
     let sensor_id = sensor_id.into_inner();
-    let sensor = get_latest_temperature(&db_pool, sensor_id).await.unwrap();
-    Ok(format!("sensor_id={} temperature={} time={:?}\n", sensor_id, sensor.temperature, sensor.time))
+    let result = get_latest_temperature(&db_pool, sensor_id)
+        .await;
+    match result {
+        Ok(sensor) => format!("sensor_id={} temperature={} time={:?}\n", sensor_id, sensor.temperature, sensor.time)
+            .with_status(StatusCode::OK),
+        Err(e) => format!("{}\n", e)
+            .with_status(StatusCode::INTERNAL_SERVER_ERROR)
+    }
 }
 
-#[post("/sensor/{sensor_id}/{sensor_key}")]
-pub async fn sensor_post(sensor_id: web::Path<i32>, sensor_key: web::Path<i32>) -> Result<String> {
-    Ok(format!("sensor_id={} sensor_key={}\n", sensor_id, sensor_key))
+#[post("/sensor/{sensor_id}/{temperature}")]
+pub async fn sensor_post(path: web::Path<(i32, i32)>, db_pool: web::Data<Pool>) -> impl Responder {
+    let (sensor_id, temperature) = path.into_inner();
+    let result = insert_temperature(&db_pool, sensor_id, temperature)
+        .await;
+    match result {
+        Ok(v) => format!("result={}\n", v)
+            .with_status(StatusCode::OK),
+        Err(e) => format!("{}\n", e)
+            .with_status(StatusCode::INTERNAL_SERVER_ERROR)
+    }
 }
