@@ -1,4 +1,5 @@
 use std::fs;
+use std::net::SocketAddr;
 
 use serde::{Deserialize, Serialize};
 
@@ -8,15 +9,7 @@ pub const DEFAULT_CONFIG_NAME: &str = "config.json";
 pub struct Config {
     #[serde(rename(deserialize = "bind"))]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub bind: Option<Vec<Bind>>,
-}
-
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-pub struct Bind {
-    #[serde(rename(deserialize = "address"))]
-    address: Option<String>,
-    #[serde(rename(deserialize = "port"))]
-    port: Option<u16>,
+    pub bind: Option<Vec<SocketAddr>>,
 }
 
 impl Config {
@@ -27,40 +20,22 @@ impl Config {
     }
 }
 
-impl Bind {
-    pub fn get(&self) -> String {
-        let address = match self.address.as_ref() {
-            Some(v) => v,
-            None => "",
-        };
-        let port = self.port.unwrap_or(0);
-
-        format!("{}:{}", address, port)
-    }
-}
-
-
 #[cfg(test)]
 mod tests {
-    use crate::config::{Bind, Config, DEFAULT_CONFIG_NAME};
+    use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
+    use crate::config::{Config, DEFAULT_CONFIG_NAME};
 
     fn provide_config() -> Config {
         Config {
             bind: Some(vec![
-                Bind {
-                    address: Some("127.0.0.1".to_string()),
-                    port: Some(8080),
-                },
-                Bind {
-                    address: Some("[::1]".to_string()),
-                    port: Some(8080),
-                },
+                SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 8080)),
+                SocketAddr::V6(SocketAddrV6::new(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1), 8080, 0, 0)),
             ]),
         }
     }
 
     fn provide_json() -> String {
-        r#"{"bind":[{"address":"127.0.0.1","port":8080},{"address":"[::1]","port":8080}]}"#.to_string()
+        r#"{"bind":["127.0.0.1:8080","[::1]:8080"]}"#.to_string()
     }
 
     #[test]
@@ -86,7 +61,6 @@ mod tests {
 
     #[test]
     fn read_config_failed_test() {
-        let error = Config::read_from("some file".to_string()).unwrap_err();
-        eprintln!("{:?}", error);
+        Config::read_from("some file".to_string()).unwrap_err();
     }
 }
