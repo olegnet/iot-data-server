@@ -27,7 +27,7 @@ pub async fn sensor_get(sensor_id: web::Path<i32>, db_pool: web::Data<Pool>) -> 
 }
 
 #[post("/sensor/{sensor_id}/{temperature}")]
-pub async fn sensor_post(path: web::Path<(i32, i32)>, db_pool: web::Data<Pool>) -> impl Responder {
+pub async fn sensor_post(path: web::Path<(i32, f32)>, db_pool: web::Data<Pool>) -> impl Responder {
     let (sensor_id, temperature) = path.into_inner();
     let result = insert_temperature(&db_pool, sensor_id, temperature)
         .await;

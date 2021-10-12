@@ -25,7 +25,7 @@ impl Postgres {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Sensor {
-    pub temperature: i32,
+    pub temperature: f32,
     pub time: SystemTime,
 }
 
@@ -47,7 +47,7 @@ pub async fn get_latest_temperature(pool: &Pool, sensor_id: i32) -> Result<Senso
     Ok(Sensor { temperature: row.get(0), time: row.get(1) })
 }
 
-pub async fn insert_temperature(pool: &Pool, sensor_id: i32, temperature: i32) -> Result<u64, PoolError> {
+pub async fn insert_temperature(pool: &Pool, sensor_id: i32, temperature: f32) -> Result<u64, PoolError> {
     let client: Client = pool.get().await?;
     let stmt = client.prepare_cached(INSERT_QUERY).await?;
     let result = client.execute(&stmt, &[&sensor_id, &temperature]).await?;
@@ -75,6 +75,6 @@ mod tests {
 
         println!("{:?}", sensor);
 
-        assert_eq!(sensor.temperature, 0);
+        assert_eq!(sensor.temperature, 0.);
     }
 }
