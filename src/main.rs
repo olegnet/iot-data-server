@@ -1,5 +1,3 @@
-use std::io::{Error, ErrorKind};
-
 use actix_web::{App, HttpServer, web};
 use actix_web::middleware::Logger;
 
@@ -12,13 +10,14 @@ async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "actix_web=info");
     env_logger::init();
 
-    let config = Config::read_from(DEFAULT_CONFIG_NAME.to_string())?;
+    let config = Config::read_from(DEFAULT_CONFIG_NAME.to_string())
+        .unwrap();
 
-    // FIXME https://actix.rs/docs/errors/
     let bind_config = config.bind
-        .ok_or(Error::new(ErrorKind::Other, "No 'bind' record in config file"))?;
+        .expect("No 'bind' record in config file");
+
     let postgres_config = config.postgres
-        .ok_or(Error::new(ErrorKind::Other, "No 'postgres' record in config file"))?;
+        .expect("No 'postgres' record in config file");
 
     let pool = Postgres::new_pool(postgres_config)
         .unwrap();

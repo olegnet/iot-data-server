@@ -56,12 +56,12 @@ pub async fn insert_temperature(pool: &Pool, sensor_id: i32, temperature: f32) -
 
 #[cfg(test)]
 mod tests {
-    use crate::config::DEFAULT_CONFIG_NAME;
+    use crate::config::{Config, DEFAULT_CONFIG_NAME};
     use crate::postgres::{get_latest_temperature, Postgres};
 
     #[tokio::test]
     async fn get_latest_temperature_test() {
-        let postgres_config = crate::config::Config::read_from(DEFAULT_CONFIG_NAME.to_string())
+        let postgres_config = Config::read_from(DEFAULT_CONFIG_NAME.to_string())
             .unwrap()
             .postgres
             .unwrap();

@@ -1,6 +1,6 @@
-use std::fs;
 use std::net::SocketAddr;
 
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
 pub const DEFAULT_CONFIG_NAME: &str = "config.json";
@@ -30,8 +30,9 @@ pub struct PostgresConfig {
 }
 
 impl Config {
-    pub fn read_from(name: String) -> std::io::Result<Config> {
-        let buf = fs::read(name)?;
+    pub fn read_from(path: String) -> Result<Config> {
+        let buf = std::fs::read(&path)
+            .with_context(|| format!("Reading file {}", path))?;
         let config = serde_json::from_slice(buf.as_slice())?;
         Ok(config)
     }
@@ -87,6 +88,6 @@ mod tests {
 
     #[test]
     fn read_config_failed_test() {
-        Config::read_from("some file".to_string()).unwrap_err();
+        Config::read_from("'some file'".to_string()).unwrap_err();
     }
 }
